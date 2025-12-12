@@ -12,14 +12,14 @@ function saveTask(){
 
     $.ajax({
         type: "POST",
-        Url: API_URL,
+        url: API_URL,
         data: JSON.stringify(data),
         contentType: "application/json",
         success: function(created){
             console.log("task created:", created);
         },
         error: function(error){
-            console.log("error:", error);
+            console.log("Error:", error);
         }
     });
 }
@@ -28,7 +28,7 @@ function loadTask()
 {
     $.ajax({
         type: "get",
-        url: API_URL,
+        url: "https://106api-b0bnggbsgnezbzcz.westus3-01.azurewebsites.net/api/tasks",
         dataType: "json",
         success: function(tasks){
             console.log(tasks)
@@ -80,6 +80,55 @@ function displayTask(task){
     `
     $(".list").append(data);
 }
+
+
+// Function to clear all displayed tasks and delete from API/database
+function clearAllTasks(){
+    // First, fetch all tasks from the API
+    $.ajax({
+        type: "GET",
+        url: API_URL,
+        dataType: "json",
+        success: function(tasks){
+            console.log("Found " + tasks.length + " tasks to delete");
+            
+            // Filter tasks for user "reece" and delete each one
+            const reeceTasks = tasks.filter(task => task.name === "reece");
+            
+            if(reeceTasks.length === 0){
+                console.log("No tasks to delete");
+                $(".list .task").remove();
+                return;
+            }
+            
+            // Delete each task from the API
+            let deletedCount = 0;
+            reeceTasks.forEach(function(task){
+                $.ajax({
+                    type: "DELETE",
+                    url: API_URL + "/" + task.id,
+                    success: function(response){
+                        deletedCount++;
+                        console.log("Deleted task:", task.id);
+                        
+                        // Once all tasks are deleted, clear the display
+                        if(deletedCount === reeceTasks.length){
+                            $(".list .task").remove();
+                            console.log("All tasks deleted from database and display");
+                        }
+                    },
+                    error: function(error){
+                        console.log("Error deleting task:", task.id, error);
+                    }
+                });
+            });
+        },
+        error: function(error){
+            console.log("Error fetching tasks:", error);
+        }
+    });
+}
+
 //test connection to api
 function testRequest()
 {
@@ -99,6 +148,8 @@ $.ajax({
 }
 function init(){
     $("#btnsave").click(saveTask);
+    $("#btnclear").click(clearAllTasks);
     loadTask();
+
 }
 window.onload = init;
